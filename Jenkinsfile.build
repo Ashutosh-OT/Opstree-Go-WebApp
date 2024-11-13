@@ -30,12 +30,12 @@ node {
     fail_job_if_dependency_returned_exception: true,
  
     // Creds Scanning
-    gitleaks_check: false,
+    gitleaks_check: true,
     fail_job_if_leak_detected: false,
     gitleaks_report_format: "html",
-    gitleaks_report_jenkins_publish: false,
+    gitleaks_report_jenkins_publish: true,
  
-    perform_code_build: false,
+    perform_code_build: true,
     build_tool: "go",
  
     // Unit Testing
