@@ -45,8 +45,8 @@ node {
     // Unit Testing
     unit_testing_check: true,
     fail_job_if_unit_issue_detected: false,
-    source_code_path: "/",
-    test_reports_path: "/",
+    source_code_path: ".",
+    test_reports_path: ".",
  
     // Static Code Analysis
     static_code_analysis_check: false,
