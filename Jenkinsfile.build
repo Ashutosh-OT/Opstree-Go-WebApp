@@ -1,3 +1,5 @@
+
+
 @Library('ot-central-ci') _
 def cipipeline = new opstree.ci.templates.golang_ci.golang_ci()
 node {
@@ -43,12 +45,12 @@ node {
     // Unit Testing
     unit_testing_check: true,
     fail_job_if_unit_issue_detected: false,
-    source_code_path: "/src",
+    source_code_path: "/",
     test_reports_path: "test_reports",
  
     // Static Code Analysis
     static_code_analysis_check: false,
-    codebase_to_scan_directory: "/src",
+    codebase_to_scan_directory: "/",
     fail_job_if_analysis_returned_exception: false,
     sonar_properties_path: "sonar.properties",
     jenkins_sonarqube_token_creds_id: "sonar-token",
