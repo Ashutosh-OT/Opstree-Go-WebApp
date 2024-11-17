@@ -24,7 +24,7 @@ node {
     source_code_path: "/",
  
     // Dependency Scanning (Optional for Go)
-    dependency_check: false,
+    dependency_check: true,
     dependency_scan_tool: "owasp",
     owasp_project_name: "owasp",
     owasp_report_publish: true,
