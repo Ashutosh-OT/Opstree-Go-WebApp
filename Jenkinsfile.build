@@ -18,7 +18,7 @@ node {
     repo_ssh_url: "git@github.com:your-org/sample-go-app.git",
     repo_branch: "main",
     repo_url_type: "http",
-    jenkins_git_creds_id: "github-creds-id",
+    jenkins_git_creds_id: "git-creds",
     source_code_path: "/",
 
     // Dependency Scanning
