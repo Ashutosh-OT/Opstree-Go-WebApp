@@ -1,16 +1,9 @@
 package main
 
-import "testing"
+import "fmt"
 
-func main(t *testing.T) {
-	tests := []struct {
-		name string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			main()
-		})
-	}
+func main() {
+	// Your main application logic here
+	fmt.Println("Hello, World!")
 }
+
