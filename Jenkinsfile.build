@@ -1,92 +1,251 @@
-@Library('ot-central-ci') _
-def cipipeline = new opstree.ci.templates.go_ci.go_ci()
-node {
-  cipipeline.call([
+package opstree.ci.templates.go_ci
 
-    // WORKSPACE MANAGEMENT
-    clean_workspace: true,
-    ignore_clean_workspace_failure: false,
-    delete_dirs: false,
-    clean_when_build_aborted: true,
-    clean_when_build_failed: true,
-    clean_when_not_built: true,
-    clean_when_build_succeed: true,
-    clean_when_build_unstable: true,
+import opstree.common.*
+import opstree.go.*
 
-    // VCS MANAGEMENT
-    repo_https_url: "https://github.com/Ashutosh-OT/Opstree-Go-WebApp.git",
-    repo_ssh_url: "git@github.com:your-org/sample-go-app.git",
-    repo_branch: "main",
-    repo_url_type: "http",
-    jenkins_git_creds_id: "git-creds",
-    source_code_path: "/",
+def call(Map step_params) {
+    ansiColor('xterm') {
+        workspace = new workspace_management()
+        vcs = new git_management()
+        credscan = new vulnerability_scanning()
+        dependencyscan = new dependency_scanning()
+        static_code_analysis = new static_code_analysis()
+        unittest = new go_test()
+        securityscan = new snyk_scanning()
+        build_dockerfile = new build_dockerfile()
+        coverage = new codecoverage()
+        publish = new publish_artifact()
+        trivy = new docker_image_scanning()
+        image_size_validator = new image_size_validator()
+        notify = new notify()
+        build = new build_artifact()
 
-    // Dependency Scanning
-    dependency_check: false,
-    dependency_scan_tool: "owasp",
-    owasp_project_name: "owasp-go",
-    owasp_report_publish: true,
-    owasp_report_format: "json",
-    fail_job_if_dependency_returned_exception: true,
+        if (step_params.repo_url_type == 'http') {
+                repo_url = "${step_params.repo_https_url}"
+        }
+        else if (step_params.repo_url_type == 'ssh') {
+                repo_url = "${step_params.repo_ssh_url}"
+        }
+        try {
+                stage('Workspace Management') {
+                        workspace.workspace_management(
+                                clean_workspace: "${step_params.clean_workspace}",
+                                ignore_clean_workspace_failure: "${step_params.ignore_clean_workspace_failure}",
+                                delete_dirs: "${step_params.delete_dirs}",
+                                clean_when_build_aborted: "${step_params.clean_when_build_aborted}",
+                                clean_when_build_failed: "${step_params.clean_when_build_failed}",
+                                clean_when_not_built: "${step_params.clean_when_not_built}",
+                                clean_when_build_succeed: "${step_params.clean_when_build_succeed}",
+                                clean_when_build_unstable: "${step_params.clean_when_build_unstable}"
+                        )
+                }
 
-    // Creds Scanning
-    gitleaks_check: true,
-    fail_job_if_leak_detected: false,
-    gitleaks_report_format: "html",
-    gitleaks_report_jenkins_publish: true,
+                stage('Git Checkout') {
+                        vcs.git_checkout(
+                                repo_url: "${repo_url}",
+                                repo_branch: "${step_params.repo_branch}",
+                                clean_workspace: "${step_params.clean_workspace}",
+                                repo_url_type: "${step_params.repo_url_type}",
+                                ssh_private_key_location: "${step_params.ssh_private_key_location}",
+                                jenkins_git_ssh_key_id: "${step_params.jenkins_git_ssh_key_id}",
+                                jenkins_git_creds_id: "${step_params.jenkins_git_creds_id}",
+                                source_code_path: "${step_params.source_code_path}"
+                        )
+                }
 
-    // Build & Unit Testing
-    perform_code_build: true,
-    build_tool: "go",
-    go_build_command: "go build ./...",
-    unit_testing_check: true,
-    fail_job_if_unit_issue_detected: true,
-    go_test_command: "go test -v ./... > test-report.xml",
-    unit_test_reports_path: "test-report.xml",
+                stage('Pre-Build Checks') {
+                        def tasks = [:]
 
-    // Static Code Analysis
-    static_code_analysis_check: true,
-    path_to_sonar_properties: "sonar.properties",
-    fail_job_if_analysis_returned_exception: false,
-    jenkins_sonarqube_token_creds_id: "sonar-token",
+                        if (step_params.gitleaks_check != null && step_params.gitleaks_check.toBoolean()) {
+                    tasks['GitleaksCredsScanning'] = {
+                                credscan.creds_scanning_factory(
+                                        gitleaks_check: "${step_params.gitleaks_check}",
+                                        repo_url: "${repo_url}",
+                                        repo_url_type: "${step_params.repo_url_type}",
+                                        gitleaks_report_format: "${step_params.gitleaks_report_format}",
+                                        gitleaks_report_jenkins_publish: "${step_params.gitleaks_report_jenkins_publish}",
+                                        fail_job_if_leak_detected: "${step_params.fail_job_if_leak_detected}"
+                                )
+                    }
+                        }
 
-    // Code Coverage
-    perform_code_coverage: true,
-    code_coverage_test: true,
+                        if (step_params.dependency_check != null && step_params.dependency_check.toBoolean()) {
+                    tasks['DependencyScanning'] = {
+                                dependencyscan.dependency_scanning_factory(
+                                        repo_url: "${repo_url}",
+                                        repo_url_type: "${step_params.repo_url_type}",
+                                        owasp_project_name: "${step_params.owasp_project_name}",
+                                        owasp_report_publish: "${step_params.owasp_report_publish}",
+                                        owasp_report_format: "${step_params.owasp_report_format}",
+                                        dependency_check: "${step_params.dependency_check}",
+                                        dependency_scan_tool: "${step_params.dependency_scan_tool}",
+                                        fail_job_if_dependency_returned_exception: "${step_params.fail_job_if_dependency_returned_exception}",
+                                        source_code_path: "${step_params.source_code_path}"
+                                )
+                    }
+                        }
 
-    // Build Dockerfile
-    perform_build_dockerfile: false,
-    image_name: "sample-go-app",
-    dockerfile_location: "/Dockerfile",
-    dockerfile_context: "/",
-    codeartifact_dependency: true,
-    codeartifact_domain: "your-domain",
-    codeartifact_owner: "account-id",
+                        if (tasks) {
+                    parallel tasks
+                        } else {
+                    echo 'No checks were enabled, skipping Pre-Build Checks stage.'
+                        }
+                }
 
-    // Image Scanning
-    image_scanning_check: false,
-    image_tag: "latest",
-    scan_severity: "CRITICAL",
-    image_scanning_report_publish: true,
+                if (step_params.perform_code_build != null && step_params.perform_code_build.toBoolean()) {
+                        stage('Build Artifact') {
+                        build.build_factory(
+                                perform_code_build: "${step_params.perform_code_build}",
+                                repo_url: "${repo_url}",
+                                repo_url_type: "${step_params.repo_url_type}",
+                                build_tool: "go",
+                                go_build_command: "${step_params.go_build_command}",
+                                source_code_path: "${step_params.source_code_path}"
+                        )
+                        }
+                }
 
-    // Image Size Validator
-    image_size_validator_check: false,
-    max_allowed_image_size: 100,
-    fail_job_if_validation_fail: false,
+                if (step_params.static_code_analysis_check != null && step_params.static_code_analysis_check.toBoolean()) {
+                        stage('Static Code Analysis') {
+                    static_code_analysis.static_code_analysis_factory(
+                                                        repo_url: "${repo_url}",
+                                                        repo_url_type: "${step_params.repo_url_type}",
+                                                        codebase_to_scan_directory: "${step_params.codebase_to_scan_directory}",
+                                                        static_code_analysis_check: "${step_params.static_code_analysis_check}",
+                                                        path_to_sonar_properties: "${step_params.path_to_sonar_properties}",
+                                                        fail_job_if_analysis_returned_exception: "${step_params.fail_job_if_analysis_returned_exception}",
+                                                        jenkins_sonarqube_token_creds_id: "${step_params.jenkins_sonarqube_token_creds_id}"
+                                )
+                        }
+                }
+                else {
+                        echo 'Skipping Static Code Analysis stage as it is disabled.'
+                }
 
-    // Publish Artifact(Docker Image)
-    artifact_publish_check: false,
-    artifact_destination_type: "ecr",
-    jenkins_aws_credentials_id: "aws-credentials-id",
-    docker_image_name: "sample-go-app",
-    ecr_repo_name: "sample-go-app",
-    ecr_region: "ap-south-1",
-    account_id: "your-account-id",
+                if (step_params.unit_testing_check != null && step_params.unit_testing_check.toBoolean()) {
+                        stage('Unit Test') {
+                    unittest.unit_testing_factory(
+                                        repo_url: "${repo_url}",
+                                        repo_url_type: "${step_params.repo_url_type}",
+                                        unit_testing_check: "${step_params.unit_testing_check}",
+                                        go_test_command: "${step_params.go_test_command}",
+                                        fail_job_if_unit_issue_detected: "${step_params.fail_job_if_unit_issue_detected}",
+                                        unit_test_reports_path: "${step_params.unit_test_reports_path}"
+                                )
+                        }
+                }
 
-    // Notification
-    notification_enabled: false,
-    notification_channel: "teams",
-    webhook_url_creds_id: "teams-webhook"
-  ])
+                else {
+                echo 'Skipping Unit test stage as it is disabled.'
+                }
+
+                if (step_params.perform_build_dockerfile != null && step_params.perform_build_dockerfile.toBoolean()) {
+                stage('Build Docker Image') {
+                    build_dockerfile.build_factory(
+                                                perform_build_dockerfile:"${step_params.perform_build_dockerfile}",
+                                                repo_url: "${repo_url}",
+                                                image_name: "${step_params.image_name}",
+                                                source_code_path: "${step_params.source_code_path}",
+                                                dockerfile_context: "${step_params.dockerfile_context}",
+                                                dockerfile_location: "${step_params.dockerfile_location}"
+                                        )
+                }
+                }
+                else {
+                        echo 'Skipping Build Docker Image stage as it is disabled.'
+                }
+
+                stage('Post-Build Checks') {
+                        def tasks = [:]
+
+                        // Conditionally add ImageScanning task
+                        if (step_params.image_scanning_check != null && step_params.image_scanning_check.toBoolean()) {
+                    tasks['ImageScanning'] = {
+                                trivy.image_scanning_factory(
+                                        image_scanning_check: "${step_params.image_scanning_check}",
+                                        image_name: "${step_params.image_name}",
+                                        image_tag: "${step_params.image_tag}",
+                                        scan_severity: "${step_params.scan_severity}",
+                                        image_scanning_report_publish: "${step_params.image_scanning_report_publish}"
+                                )
+                    }
+                        }
+
+                        // Conditionally add ImageSizeValidator task
+                        if (step_params.image_size_validator_check != null && step_params.image_size_validator_check.toBoolean()) {
+                    tasks['ImageSizeValidator'] = {
+                                image_size_validator.size_validator_factory(
+                                        image_size_validator_check: "${step_params.image_size_validator_check}",
+                                        image_name: "${step_params.image_name}",
+                                        image_tag: "${step_params.image_tag}",
+                                        max_allowed_image_size: "${step_params.max_allowed_image_size}",
+                                        fail_job_if_validation_fail: "${step_params.fail_job_if_validation_fail}"
+                                )
+                    }
+                        }
+
+                        // Only run the parallel block if there are tasks
+                        if (tasks) {
+                    parallel tasks
+                        } else {
+                    echo 'No image scanning or validation tasks are enabled, skipping this stage.'
+                        }
+                }
+
+                if (step_params.artifact_publish_check != null && step_params.artifact_publish_check.toBoolean()) {
+                        stage('Publish Artifact') {
+                    publish.publish_factory(
+                                        repo_url: "${repo_url}",
+                                        artifact_publish_check: "${step_params.artifact_publish_check}",
+                                        artifact_destination_type: "${step_params.artifact_destination_type}",
+                                        jenkins_aws_credentials_id: "${step_params.jenkins_aws_credentials_id}",
+                                        docker_image_name: "${step_params.docker_image_name}",
+                                        ecr_repo_name: "${step_params.ecr_repo_name}",
+                                        ecr_region: "${step_params.ecr_region}",
+                                        account_id: "${step_params.account_id}"
+                                )
+                        }
+                }
+                else {
+                        echo 'Skipping Publish Artifact stage as it is disabled.'
+                }
+        } catch (Exception e) {
+            currentBuild.result = 'FAILURE'
+            if (step_params.notification_enabled.toBoolean()) {
+                notify.notification_factory(
+                        build_status: 'Failure',
+                        webhook_url_creds_id: "${step_params.webhook_url_creds_id}",
+                        notification_channel: "${step_params.notification_channel}",
+                        notification_enabled: "${step_params.notification_enabled}"
+                )
+            }
+            throw e
+        } finally {
+                if (step_params.notification_enabled.toBoolean()) {
+                        if (currentBuild.currentResult == 'SUCCESS') {
+                    notify.notification_factory(
+                                        build_status: 'Success',
+                                        webhook_url_creds_id: "${step_params.webhook_url_creds_id}",
+                                        notification_channel: "${step_params.notification_channel}",
+                                        notification_enabled: "${step_params.notification_enabled}"
+                                )
+                        }
+                }
+                if (step_params.clean_workspace.toBoolean()) {
+                        echo "Cleaning up workspace and temporary directories"
+                        deleteDir()
+                        def workspace = env.WORKSPACE
+                        if (fileExists("${workspace}@tmp")) {
+                        dir("${workspace}@tmp") {
+                                deleteDir()
+                        }
+                        }
+                        if (fileExists("${workspace}@script")) {
+                        dir("${workspace}@script") {
+                                deleteDir()
+                        }
+                        }
+                }
+        }
+    }
 }
-
