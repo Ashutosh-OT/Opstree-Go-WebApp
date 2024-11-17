@@ -62,15 +62,15 @@ node {
     dockerfile_context: "",
  
     // Image scanning
-    image_scanning_check: false,
+    image_scanning_check: true,
     image_tag: "latest",
     scan_severity: "CRITICAL",
     image_scanning_report_publish: true,
  
     // Image size validator
-    image_size_validator_check: false,
+    image_size_validator_check: true,
     max_allowed_image_size: 100,
-    fail_job_if_validation_fail: false,
+    fail_job_if_validation_fail: true,
  
     // Publish Artifact (Docker Image)
     artifact_publish_check: false,
