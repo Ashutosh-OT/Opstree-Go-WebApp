@@ -14,7 +14,7 @@ node {
     clean_when_build_unstable: true,
 
     // VCS MANAGEMENT
-    repo_https_url: "https://github.com/your-org/sample-go-app.git",
+    repo_https_url: "https://github.com/Ashutosh-OT/Opstree-Go-WebApp.git",
     repo_ssh_url: "git@github.com:your-org/sample-go-app.git",
     repo_branch: "main",
     repo_url_type: "http",
