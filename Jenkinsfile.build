@@ -35,7 +35,7 @@ node {
     gitleaks_check: true,
     fail_job_if_leak_detected: false,
     gitleaks_report_format: "html",
-    gitleaks_report_jenkins_publish: false,
+    gitleaks_report_jenkins_publish: true,
  
     // Build
     perform_code_build: true,
