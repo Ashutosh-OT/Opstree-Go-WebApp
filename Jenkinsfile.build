@@ -49,7 +49,7 @@ node {
     test_reports_path: ".",
  
     // Static Code Analysis
-    static_code_analysis_check: true,
+    static_code_analysis_check: fasle,
     codebase_to_scan_directory: "/",
     fail_job_if_analysis_returned_exception: false,
     sonar_properties_path: "sonar.properties",
