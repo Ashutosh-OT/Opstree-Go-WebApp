@@ -40,7 +40,7 @@ node {
     // Build
     perform_code_build: true,
     build_tool: "go",
-    codeartifact_dependency: true,
+    codeartifact_dependency: false,
     codeartifact_domain: "test",
     codeartifact_owner: "384961893048",
     go_version: "1.20",
