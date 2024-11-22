@@ -39,8 +39,11 @@ node {
  
     // Build
     perform_code_build: true,
-    build_tool: "golang",
-    build_output_path: "bin/app",
+    build_tool: "go",
+    codeartifact_dependency: true,
+    codeartifact_domain: "test",
+    codeartifact_owner: "384961893048",
+    go_version: "1.20",
  
     // Unit Testing
     unit_testing_check: true,
